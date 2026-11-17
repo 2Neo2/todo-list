@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="description"
+    content="Тихое место для больших планов и небольших ежедневных задач."
+  >
+  <meta name="theme-color" content="#f7f7f5">
+  <title>Forma — список задач</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Рабочее пространство">
+      <a class="brand" href="./" aria-label="Forma — главная">
+        <span class="brand-icon" aria-hidden="true">f.</span>
+        <span>forma<span class="brand-dot">.</span></span>
+      </a>
+
+      <div class="workspace">
+        <span class="workspace-avatar" aria-hidden="true">Л</span>
+        <div>
+          <strong>Личное пространство</strong>
+          <span>Меньше шума. Больше фокуса.</span>
+        </div>
+      </div>
+
+      <p class="nav-label">МОИ ЗАДАЧИ</p>
+
+      <nav class="filters" aria-label="Фильтры задач">
+        <button
+          class="filter active"
+          type="button"
+          data-filter="all"
+          aria-pressed="true"
+        >
+          <span><span aria-hidden="true">▤</span> Все задачи</span>
+          <span class="count" id="count-all">0</span>
+        </button>
+
+        <button
+          class="filter"
+          type="button"
+          data-filter="active"
+          aria-pressed="false"
+        >
+          <span><span aria-hidden="true">◷</span> В работе</span>
+          <span class="count" id="count-active">0</span>
+        </button>
+
+        <button
+          class="filter"
+          type="button"
+          data-filter="completed"
+          aria-pressed="false"
+        >
+          <span><span aria-hidden="true">✓</span> Выполнено</span>
+          <span class="count" id="count-completed">0</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-note">
+        <span aria-hidden="true">✧</span>
+        <p>Большие дела начинаются<br>с одной маленькой задачи.</p>
+      </div>
+
+      <p class="storage-note">Хранится в этом браузере</p>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <span>Личное пространство <span class="slash">/</span> Задачи</span>
+        <time id="today"></time>
+      </header>
+
+      <div class="page">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div class="page-icon" aria-hidden="true">✳</div>
+          <p class="eyebrow">ТВОЙ ДЕНЬ, ТВОЙ РИТМ</p>
+          <h1 id="page-title">Все задачи</h1>
+          <p class="subtitle">
+            Освободи голову. Запиши важное. Начни с малого.
+          </p>
+        </section>
+
+        <section class="progress-card" aria-label="Общий прогресс">
+          <div class="progress-copy">
+            <span class="progress-icon" aria-hidden="true">↗</span>
+            <div>
+              <h2>Шаг за шагом</h2>
+              <p id="progress-text">Добавь первую задачу, чтобы начать.</p>
+            </div>
+          </div>
+
+          <div class="progress-visual">
+            <span id="progress-value">0%</span>
+            <progress id="progress" max="100" value="0">
+              0%
+            </progress>
+          </div>
+        </section>
+
+        <form class="task-form" id="task-form">
+          <label class="sr-only" for="task-input">Название новой задачи</label>
+          <span class="input-plus" aria-hidden="true">+</span>
+
+          <input
+            id="task-input"
+            name="title"
+            type="text"
+            placeholder="Что нужно сделать?"
+            maxlength="180"
+            autocomplete="off"
+            required
+          >
+
+          <label class="sr-only" for="priority-input">Приоритет</label>
+          <select id="priority-input" name="priority">
+            <option value="normal">Обычный</option>
+            <option value="high">Высокий</option>
+            <option value="low">Низкий</option>
+          </select>
+
+          <button class="add-button" type="submit">
+            Добавить <span aria-hidden="true">↵</span>
+          </button>
+        </form>
+
+        <section class="tasks-section" aria-labelledby="list-heading">
+          <div class="list-toolbar">
+            <h2 id="list-heading">
+              Твой список <span id="visible-count">0</span>
+            </h2>
+
+            <div class="search-field">
+              <span aria-hidden="true">⌕</span>
+              <label class="sr-only" for="search-input">Поиск задач</label>
+              <input
+                id="search-input"
+                type="search"
+                placeholder="Найти задачу..."
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <ul class="task-list" id="task-list"></ul>
+
+          <div class="empty-state" id="empty-state">
+            <span class="empty-icon" aria-hidden="true">☷</span>
+            <h3 id="empty-title">Здесь начинается порядок</h3>
+            <p id="empty-description">
+              Добавь первую задачу — и станет немного яснее.
+            </p>
+          </div>
+        </section>
+
+        <footer class="page-footer">
+          <span>Одно дело за раз — уже хороший план.</span>
+          <span>Сделано с вниманием к деталям</span>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" hidden>
+    <span id="toast-message" role="status" aria-live="polite"></span>
+    <button id="undo-button" type="button" hidden>Отменить</button>
+  </div>
+
+  <template id="task-template">
+    <li class="task-row">
+      <input class="task-checkbox" type="checkbox">
+
+      <div class="task-content">
+        <span class="task-title"></span>
+        <span class="task-meta"></span>
+      </div>
+
+      <span class="priority-badge"></span>
+
+      <div class="task-actions">
+        <button
+          class="icon-button edit-button"
+          type="button"
+          title="Редактировать"
+          aria-label="Редактировать задачу"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m16 4 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/>
+          </svg>
+        </button>
+
+        <button
+          class="icon-button delete-button"
+          type="button"
+          title="Удалить"
+          aria-label="Удалить задачу"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>
+          </svg>
+        </button>
+      </div>
+    </li>
+  </template>
+</body>
+</html>
