@@ -12,7 +12,7 @@ import {
   Clock3,
   Leaf,
   Upload,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { useTasks } from "./hooks/useTasks";
 import type { User } from "./api";
@@ -24,7 +24,7 @@ import {
   taskWord,
   validDate,
 } from "./utils/calendar";
-import { filterTasks, parseTasks, sortTasks } from "./utils/tasks";
+import { filterTasks, parseTasks, sortTasks, withUuidIds } from "./utils/tasks";
 import type { Sort } from "./utils/tasks";
 import { TAGS } from "./utils/tags";
 import type { Tag } from "./utils/tags";
@@ -146,7 +146,7 @@ export default function App({
   }
   async function importTasks(file: File) {
     try {
-      const imported = parseTasks(await file.text());
+      const imported = withUuidIds(parseTasks(await file.text()));
       if (confirm(`Заменить текущие задачи (${imported.length} шт.) файлом?`))
         commit(imported);
     } catch {

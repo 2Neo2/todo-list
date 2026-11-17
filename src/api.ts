@@ -61,7 +61,6 @@ export const api = {
   me: () => request<{ user: User }>("GET", "/auth/me"),
   listTasks: () => request<Task[]>("GET", "/tasks"),
   createTask: (task: Task) => request<Task>("POST", "/tasks", task),
-  updateTask: (task: Task) =>
-    request<Task>("PATCH", `/tasks/${task.id}`, task),
+  updateTask: (task: Task) => request<Task>("PATCH", `/tasks/${task.id}`, task),
   deleteTask: (id: string) => request<void>("DELETE", `/tasks/${id}`),
 };

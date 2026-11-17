@@ -46,7 +46,8 @@ export function parseCredentials(body) {
   const name = String(body?.name ?? "").trim().slice(0, 60);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
     return { error: "Введите корректный email" };
-  if (password.length < 8 || password.length > 72)
-    return { error: "Пароль должен быть от 8 до 72 символов" };
+  // bcrypt учитывает только первые 72 байта, а кириллица занимает 2 байта на букву
+  if (password.length < 8 || Buffer.byteLength(password) > 72)
+    return { error: "Пароль: от 8 символов, не больше 72 байт (около 36 русских букв)" };
   return { email, password, name };
 }

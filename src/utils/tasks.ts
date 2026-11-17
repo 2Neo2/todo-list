@@ -1,7 +1,13 @@
 import { TAG_IDS } from "./tags.ts";
 import { validDate } from "./calendar.ts";
 import type { Task, Filter } from "../types/task.ts";
-export const STORAGE_KEY = "forma.tasks.v1";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Сервер принимает только UUID: старым или чужим id выдаём новые
+export function withUuidIds(tasks: Task[]): Task[] {
+  return tasks.map((t) =>
+    UUID.test(t.id) ? t : { ...t, id: crypto.randomUUID() },
+  );
+}
 export function parseTasks(raw: string | null): Task[] {
   if (raw === null) return [];
   const data: unknown = JSON.parse(raw);

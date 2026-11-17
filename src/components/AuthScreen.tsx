@@ -10,9 +10,10 @@ interface Props {
     password: string,
     name: string,
   ) => Promise<void>;
+  notice?: string;
 }
 
-export function AuthScreen({ onSubmit }: Props) {
+export function AuthScreen({ onSubmit, notice }: Props) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -78,9 +79,9 @@ export function AuthScreen({ onSubmit }: Props) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
-        {error && (
+        {(error || notice) && (
           <div className="auth-error" role="alert">
-            {error}
+            {error || notice}
           </div>
         )}
         <button className="primary" type="submit" disabled={busy}>

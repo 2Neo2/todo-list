@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import path from "node:path";
@@ -7,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { pool, initDb } from "./db.js";
 import { isUuid, parseCredentials, parseTask } from "./validate.js";
 
-const { JWT_SECRET, DATABASE_URL, PORT = 3001 } = process.env;
+const { JWT_SECRET, DATABASE_URL, PORT = 3001, HOST = "0.0.0.0" } = process.env;
 if (!DATABASE_URL) {
   console.error("Не задан DATABASE_URL (см. server/.env.example)");
   process.exit(1);
@@ -19,6 +21,17 @@ if (!JWT_SECRET || JWT_SECRET.length < 16) {
 
 const app = express();
 app.disable("x-powered-by");
+// За nginx задайте TRUST_PROXY=1, чтобы лимиты считались по реальному IP клиента
+app.set("trust proxy", Number(process.env.TRUST_PROXY ?? 0));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      // Не переписываем http-запросы в https, иначе сайт не откроется без сертификата
+      directives: { "upgrade-insecure-requests": null },
+    },
+  }),
+);
 app.use(express.json({ limit: "100kb" }));
 
 const sign = (user) =>
@@ -40,11 +53,23 @@ function auth(req, res, next) {
 
 const api = express.Router();
 
+// Не больше 10 попыток входа или регистрации с одного IP за 15 минут
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много попыток. Попробуйте через 15 минут" },
+});
+// Хэш для выравнивания времени ответа, если пользователя с таким email нет
+const DUMMY_HASH = bcrypt.hashSync("dummy-password", 12);
+
 api.get("/health", (req, res) => res.json({ ok: true }));
 
 /* ---------- авторизация ---------- */
 api.post(
   "/auth/register",
+  authLimiter,
   wrap(async (req, res) => {
     const data = parseCredentials(req.body);
     if (data.error) return res.status(400).json({ error: data.error });
@@ -65,13 +90,14 @@ api.post(
 
 api.post(
   "/auth/login",
+  authLimiter,
   wrap(async (req, res) => {
     const email = String(req.body?.email ?? "").trim().toLowerCase();
     const password = String(req.body?.password ?? "");
     const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     const user = rows[0];
-    const ok = user && (await bcrypt.compare(password, user.password_hash));
-    if (!ok) return res.status(401).json({ error: "Неверный email или пароль" });
+    const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+    if (!user || !ok) return res.status(401).json({ error: "Неверный email или пароль" });
     res.json({ token: sign(user), user: publicUser(user) });
   }),
 );
@@ -130,6 +156,9 @@ api.post(
     } catch (e) {
       if (e.code === "23505")
         return res.status(409).json({ error: "Задача с таким id уже есть" });
+      // пользователь удалён, а токен ещё действует
+      if (e.code === "23503")
+        return res.status(401).json({ error: "Пользователь не найден" });
       throw e;
     }
   }),
@@ -175,9 +204,13 @@ if (existsSync(dist)) {
 }
 
 app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed")
+    return res.status(400).json({ error: "Некорректный JSON" });
+  if (err.type === "entity.too.large")
+    return res.status(413).json({ error: "Слишком большой запрос" });
   console.error(err);
   res.status(500).json({ error: "Ошибка сервера" });
 });
 
 await initDb();
-app.listen(PORT, () => console.log(`Forma API: http://localhost:${PORT}`));
+app.listen(PORT, HOST, () => console.log(`Forma API: http://${HOST}:${PORT}`));

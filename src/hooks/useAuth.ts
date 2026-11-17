@@ -5,6 +5,7 @@ import type { User } from "../api";
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(() => !!getToken());
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (!getToken()) return;
@@ -13,6 +14,7 @@ export function useAuth() {
       .then((r) => setUser(r.user))
       .catch((e) => {
         if (e instanceof ApiError && e.status === 401) setToken(null);
+        else setNotice("Не удалось связаться с сервером. Попробуйте позже.");
       })
       .finally(() => setChecking(false));
   }, []);
@@ -36,5 +38,5 @@ export function useAuth() {
     setUser(null);
   }
 
-  return { user, checking, enter, logout };
+  return { user, checking, notice, enter, logout };
 }

@@ -7,9 +7,9 @@ import "./styles.css";
 import "./theme.css";
 
 function Root() {
-  const { user, checking, enter, logout } = useAuth();
+  const { user, checking, notice, enter, logout } = useAuth();
   if (checking) return <div className="boot">Загрузка…</div>;
-  if (!user) return <AuthScreen onSubmit={enter} />;
+  if (!user) return <AuthScreen onSubmit={enter} notice={notice} />;
   return <App key={user.id} user={user} onLogout={logout} />;
 }
 

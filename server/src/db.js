@@ -12,6 +12,9 @@ export const pool = new pg.Pool({
       : undefined,
 });
 
+// Без этого обработчика обрыв соединения с БД может уронить процесс
+pool.on("error", (err) => console.error("Ошибка соединения с БД:", err.message));
+
 // Создаёт таблицы при запуске, если их ещё нет
 export async function initDb() {
   const sql = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
